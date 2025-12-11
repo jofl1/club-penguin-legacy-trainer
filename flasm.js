@@ -87,21 +87,39 @@ exports.setupFlasm = async () => {
 };
 
 exports.disassemble = (swfFile) =>
-  new Promise((resolve) => {
-    exec(
-      path.join(__dirname, flasmDir, flasmExecutableName) +
-        " -d " +
-        path.join(__dirname, swfFile),
-      (_error, stdout, _stderr) => resolve(stdout)
-    );
+  new Promise((resolve, reject) => {
+    const cmd = path.join(__dirname, flasmDir, flasmExecutableName) +
+      " -d " +
+      path.join(__dirname, swfFile);
+    exec(cmd, (error, stdout, stderr) => {
+      if (error) {
+        console.error("Flasm disassemble error:", error.message);
+        console.error("stderr:", stderr);
+        return reject(error);
+      }
+      // Strip the "Parsing '...':" header line from output
+      const lines = stdout.split(/\r?\n/);
+      if (lines[0].startsWith("Parsing ")) {
+        lines.shift();
+      }
+      resolve(lines.join("\n"));
+    });
   });
 
 exports.assemble = (flmFile) =>
-  new Promise((resolve) => {
-    exec(
-      path.join(__dirname, flasmDir, flasmExecutableName) +
-        " -a " +
-        path.join(__dirname, flmFile),
-      (_error, stdout, _stderr) => resolve(stdout)
-    );
+  new Promise((resolve, reject) => {
+    const cmd = path.join(__dirname, flasmDir, flasmExecutableName) +
+      " -a " +
+      path.join(__dirname, flmFile);
+    exec(cmd, (error, stdout, stderr) => {
+      if (error) {
+        console.error("Flasm assemble error:", error.message);
+        console.error("stderr:", stderr);
+        return reject(error);
+      }
+      if (stderr) {
+        console.error("Flasm assemble warnings:", stderr);
+      }
+      resolve(stdout);
+    });
   });

@@ -3,35 +3,35 @@
     "id": "hydro-hopper-coins",
     "title": "HydroHopper 1K Coins Hack",
     "description": "HydroHopper always rewards 1000 coins.",
-    "url": "https://media.cplegacy.net/assets/media/swf/games/hydro/HydroHopper.swf",
-    "substitutions": [
+    "url": "https://media.cplegacy.com/assets/media/swf/games/hydro/HydroHopper.swf",
+    "scriptPath": "scripts/__Packages/com/clubpenguin/games/HydroHopper.as",
+    "replacements": [
       {
-        "replaceLines": [377, 392],
-        "withLines": [
-          "      push r:this, 'myGame', 0, 'Object'",
-          "      new",
-          "      setMember",
-          "      push r:this, 'myGame'",
-          "      getMember",
-          "      push 'currentScore', 10000",
-          "      setMember"
-        ]
+        "find": "_loc3_.score = this.myGame.currentScore;",
+        "replace": "this.myGame.currentScore = 10000;\n      _loc3_.score = this.myGame.currentScore;"
       }
     ]
   },
   "catchin-waves-coins": {
     "id": "catchin-waves-coins",
     "title": "Catchin' Waves 5K Coins Hack",
-    "description": "Catchin' Waves rewards 5000 coins when exiting the game before selecting a mode.",
-    "url": "https://media.cplegacy.net/assets/media/swf/games/waves/CatchinWaves.swf",
-    "substitutions": [
+    "description": "Catchin' Waves rewards 5000 coins.",
+    "url": "https://media.cplegacy.com/assets/media/swf/games/waves/CatchinWaves.swf",
+    "scriptPaths": [
+      "scripts/frame_1/DoAction.as",
+      "scripts/frame_2/DoAction.as",
+      "scripts/frame_3/DoAction.as",
+      "scripts/frame_4/DoAction.as",
+      "scripts/frame_5/DoAction.as",
+      "scripts/frame_6/DoAction.as",
+      "scripts/frame_7/DoAction.as",
+      "scripts/frame_8/DoAction.as",
+      "scripts/frame_9/DoAction.as"
+    ],
+    "replacements": [
       {
-        "replaceLines": [9848, 9856],
-        "withLines": [
-          "      push 'coinsCountTotal'",
-          "      push 5000",
-          "      setVariable"
-        ]
+        "find": "var _loc2_ = new Object();\n   _loc2_.score = coinsCountTotal;",
+        "replace": "coinsCountTotal = 5000;\n   var _loc2_ = new Object();\n   _loc2_.score = coinsCountTotal;"
       }
     ]
   }

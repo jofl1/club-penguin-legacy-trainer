@@ -31,7 +31,13 @@ exports.setupLocalServer = () => {
       fs.readFile(
         path.join(__dirname, "server", req.url),
         "binary",
-        (_, file) => {
+        (err, file) => {
+          if (err) {
+            console.error("Failed to serve:", req.url, err.message);
+            res.writeHead(404);
+            res.end("File not found");
+            return;
+          }
           res.setHeader("Content-Type", "application/x-shockwave-flash");
           res.setHeader("Access-Control-Allow-Origin", "*");
           res.writeHead(200);
