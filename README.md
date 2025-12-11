@@ -1,44 +1,47 @@
 # Club Penguin Legacy Trainer
 
-Back in the day, I was known in the Club Penguin hacking community as PenXZ. In a fit of nostalgia, I wanted to try and make Club Penguin hacks in 2022, but how?
+Forked from [giacomozama/club-penguin-legacy-trainer](https://github.com/giacomozama/club-penguin-legacy-trainer).
 
-**Memory editing?** Only noobs would do that.
+I decided to update this project because I was in a state of flu-based boredom and wanted to get it working on my Mac. The original used Flasm which doesn't work on Apple Silicon, so I rewrote it to use FFDec instead.
 
-**Packet editing?** Not fun.
+## How It Works
 
-**Bots?** Penguin Client Library has been remade a million times already.
+This is an Electron app that:
 
-**ActiveX Flash trainers?** No one knows how to get that stuff working anymore. Also, they don't work with HTML5 private servers.
+1. Downloads original .swf game files from Club Penguin Legacy
+2. Uses [FFDec](https://github.com/jindrapetrik/jpexs-decompiler) to decompile, modify, and recompile the ActionScript
+3. Runs a local server to serve the modified .swf files
+4. Intercepts game requests and redirects them to your local server
 
-**Hijack Ruffle to edit variables or call functions?** NOT NEEDLESSLY COMPLICATED ENOUGH.
+## Available Hacks
 
+- **HydroHopper 1K Coins** - Always get 1000 coins when the game ends
+- **Catchin' Waves 5K Coins** - Always get 5000 coins when the game ends
 
-Yes, you heard it right. We're doing Club Penguin hacks in 2022, and we're doing them in a suboptimal, yet somewhat innovative way. The private server is gonna be Club Penguin Legacy, the reason being it's the first one on which I got this to work.
+## Requirements
 
+- Node.js
+- Java (for FFDec)
 
-**So, how does this trainer work?**
+## Installation
 
-This trainer is an electron app that does three things:
+```bash
+# Install Java (macOS)
+brew install openjdk
 
-1) Downloads and patches .swf files by disassembling and reassembling them with Flasm
-2) Runs a local server for serving the patched .swf files
-3) Allows you to play the game while redirecting all requests for .swf files that have been patched to your local server
+# Clone the repo
+git clone https://github.com/jofl1/club-penguin-legacy-trainer.git
+cd club-penguin-legacy-trainer
 
-You can patch the .swf files to change a lot of stuff. Right now, a single hack is available, which makes it so that HydroHopper always rewards 1000 coins on exit.
+# Install dependencies
+npm install
 
+# Run
+npm start
+```
 
-**WiLl ThIs StUfF gEt Me BaNnEd?**
+FFDec will automatically download on first run.
 
-Lol maybe? This is for **educational purposes**. The whole point of hacking Club Penguin back in the day was to learn basic coding and reverse engineering, and that should remain so.
+## Disclaimer
 
-What's the point of trying to gain an unfair advantage on Club Penguin private servers in this day and age, any way?
-
-
-**How do i run this?**
-
-    npm install
-    npm start
-
-You will need NodeJS. Not tested on Windows or Mac.
-
-Waddle on, until the end of days.
+This is for educational purposes only. Use at your own risk.
