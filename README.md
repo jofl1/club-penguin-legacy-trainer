@@ -16,7 +16,7 @@ This is an Electron app that:
 ## Available Hacks
 
 - **HydroHopper 1K Coins** - Always get 1000 coins when the game ends
-- **Catchin' Waves 5K Coins** - Always get 5000 coins when the game ends
+- **Catchin' Waves 5K Coins** - Always get 5000 coins when the game ends <-- Does not work as of 11/12/25
 
 ## Requirements
 
