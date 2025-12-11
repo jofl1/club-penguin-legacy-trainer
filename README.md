@@ -42,6 +42,4 @@ npm start
 
 FFDec will automatically download on first run.
 
-## Disclaimer
 
-This is for educational purposes only. Use at your own risk.
