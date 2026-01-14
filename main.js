@@ -21,7 +21,7 @@ const createWindow = () => {
 };
 
 app.whenReady().then(async () => {
-  setupLocalServer();
+  await setupLocalServer();
   createWindow();
 
   await syncHacksOnLocalServer();

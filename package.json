@@ -24,8 +24,6 @@
     "electron": "^22.0.0"
   },
   "dependencies": {
-    "adm-zip": "^0.5.9",
-    "gunzip-maybe": "^1.4.2",
-    "tar-stream": "^3.0.0"
+    "adm-zip": "^0.5.9"
   }
 }
