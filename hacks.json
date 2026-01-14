@@ -30,8 +30,8 @@
     ],
     "replacements": [
       {
-        "find": "var _loc2_ = new Object();\n   _loc2_.score = coinsCountTotal;",
-        "replace": "coinsCountTotal = 5000;\n   var _loc2_ = new Object();\n   _loc2_.score = coinsCountTotal;"
+        "find": "   var _loc2_ = new Object();\r\n   _loc2_.score = coinsCountTotal;",
+        "replace": "   coinsCountTotal = 5000;\r\n   var _loc2_ = new Object();\r\n   _loc2_.score = coinsCountTotal;"
       }
     ]
   }
