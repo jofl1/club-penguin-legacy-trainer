@@ -1,4 +1,4 @@
-const ipcRendered = require("electron").ipcRenderer;
+const ipcRenderer = require("electron").ipcRenderer;
 
 const goToTab = (tab) => {
   document.getElementById("tab-holder").className = "show-" + tab;
@@ -14,7 +14,7 @@ document
 
 const getHacks = () => {
   const hacksContainer = document.getElementById("hacks");
-  ipcRendered.invoke("get-hacks").then((hacks) => {
+  ipcRenderer.invoke("get-hacks").then((hacks) => {
     for (let i = 0; i < hacks.length; i++) {
       const hack = hacks[i];
       const hackElement = document.createElement("div");
@@ -27,12 +27,12 @@ const getHacks = () => {
       checkboxElement.checked = hack.enabled;
 
       const labelElement = document.createElement("label");
-      labelElement.setAttribute("for", "chk-hack-" + hack.id)
-      labelElement.innerHTML = hack.title;
+      labelElement.setAttribute("for", "chk-hack-" + hack.id);
+      labelElement.textContent = hack.title;
 
       const descriptionElement = document.createElement("div");
       descriptionElement.className = "hack-description";
-      descriptionElement.innerHTML = hack.description;
+      descriptionElement.textContent = hack.description;
 
       hackElement.appendChild(checkboxElement);
       hackElement.appendChild(labelElement);
@@ -48,9 +48,9 @@ const saveHacks = () => {
   const config = {};
   for (let i = 0; i < checkboxes.length; i++) {
     const checkbox = checkboxes[i];
-    config[checkbox.id.substring(9)] = checkbox.checked;
+    config[checkbox.id.replace("chk-hack-", "")] = checkbox.checked;
   }
-  ipcRendered.send("change-config", config);
+  ipcRenderer.send("change-config", config);
 }
 
 document.getElementById("btn-save-hacks").addEventListener("click", () => {

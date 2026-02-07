@@ -1,8 +1,8 @@
 const path = require("path");
 const fs = require("fs");
 const { exec } = require("child_process");
-const https = require("https");
 const AdmZip = require("adm-zip");
+const { downloadFile } = require("./download");
 
 const ffdecDir = path.join(__dirname, "ffdec");
 const ffdecUrl = "https://github.com/jindrapetrik/jpexs-decompiler/releases/download/version24.1.1/ffdec_24.1.1.zip";
@@ -68,29 +68,7 @@ exports.setupFFDec = async () => {
 
   const zipPath = path.join(ffdecDir, "ffdec.zip");
 
-  await new Promise((resolve, reject) => {
-    const file = fs.createWriteStream(zipPath);
-    const handleResponse = (response) => {
-      if (response.statusCode === 302 || response.statusCode === 301) {
-        https.get(response.headers.location, handleResponse).on("error", reject);
-        return;
-      }
-      if (response.statusCode !== 200) {
-        reject(new Error(`Failed to download FFDec: HTTP ${response.statusCode}`));
-        return;
-      }
-      response.pipe(file);
-      file.on("finish", () => {
-        file.close();
-        resolve();
-      });
-      file.on("error", (err) => {
-        fs.unlink(zipPath, () => {});
-        reject(err);
-      });
-    };
-    https.get(ffdecUrl, handleResponse).on("error", reject);
-  });
+  await downloadFile(ffdecUrl, zipPath);
 
   console.log("Extracting FFDec...");
   try {

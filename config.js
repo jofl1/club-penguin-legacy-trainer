@@ -83,10 +83,7 @@ exports.updateConfig = (newConfig) => {
   try {
     // Update in-memory config
     for (const key of Object.keys(newConfig)) {
-      if (Object.prototype.hasOwnProperty.call(newConfig, key)) {
-        // Only accept boolean values
-        config[key] = Boolean(newConfig[key]);
-      }
+      config[key] = Boolean(newConfig[key]);
     }
 
     // Write to disk synchronously to ensure consistency

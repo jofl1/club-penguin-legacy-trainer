@@ -1,1 +1,0 @@
-exports.CDN_URL = "https://media.cplegacy.com";

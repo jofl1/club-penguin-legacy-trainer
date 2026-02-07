@@ -42,24 +42,24 @@ process.on("uncaughtException", (err) => {
 const deployHack = async (hack) => {
   console.log("Deploying " + hack.title + "...");
 
-  const serverFilePath = path.join("server", new URL(hack.url).pathname);
+  const serverFilePath = path.join(__dirname, "server", new URL(hack.url).pathname);
 
   if (fs.existsSync(serverFilePath)) {
     console.log("SKIPPED (already deployed)");
     return { success: true, skipped: true };
   }
 
-  const tmpDir = crypto.randomUUID();
+  const tmpDir = path.join(__dirname, crypto.randomUUID());
   activeTempDirs.add(tmpDir);
 
   try {
     fs.mkdirSync(tmpDir);
 
-    const swfFileName = /[^/]*$/.exec(hack.url)[0];
+    const swfFileName = path.basename(new URL(hack.url).pathname);
     const swfFilePath = path.join(tmpDir, swfFileName);
     const scriptsDir = path.join(tmpDir, "scripts_export");
 
-    fs.mkdirSync(serverFilePath.slice(0, -swfFileName.length), {
+    fs.mkdirSync(path.dirname(serverFilePath), {
       recursive: true,
     });
 
@@ -73,7 +73,7 @@ const deployHack = async (hack) => {
 
     // Export scripts using FFDec
     console.log("Exporting scripts...");
-    await exportScripts(path.join(__dirname, swfFilePath), scriptsDir);
+    await exportScripts(swfFilePath, scriptsDir);
 
     if (!fs.existsSync(scriptsDir)) {
       throw new Error("Failed to export scripts from SWF");
@@ -119,11 +119,7 @@ const deployHack = async (hack) => {
     // Import modified scripts back into SWF
     console.log("Importing modified scripts...");
     const outputSwf = path.join(tmpDir, "modified_" + swfFileName);
-    await importScripts(
-      path.join(__dirname, swfFilePath),
-      path.join(__dirname, outputSwf),
-      scriptsDir
-    );
+    await importScripts(swfFilePath, outputSwf, scriptsDir);
 
     if (!fs.existsSync(outputSwf)) {
       throw new Error("Failed to create modified SWF");
@@ -157,7 +153,7 @@ const deployHack = async (hack) => {
 const undeployHack = (hack) => {
   console.log("Undeploying " + hack.title + "...");
 
-  const serverFilePath = path.join("server", new URL(hack.url).pathname);
+  const serverFilePath = path.join(__dirname, "server", new URL(hack.url).pathname);
 
   if (!fs.existsSync(serverFilePath)) {
     console.log("SKIPPED (not deployed)");

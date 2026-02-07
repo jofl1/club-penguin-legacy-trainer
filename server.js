@@ -4,8 +4,9 @@ const http = require("http");
 const fs = require("fs");
 const net = require("net");
 
-const { CDN_URL } = require("./consts");
 const { availableHacks, currentConfig } = require("./config");
+
+const CDN_URL = "https://media.cplegacy.com";
 
 const DEFAULT_PORT = 8420;
 const PORT_RANGE = 10; // Try up to 10 ports
@@ -116,5 +117,3 @@ exports.setupLocalServer = async () => {
     return { success: false, error: err.message };
   }
 };
-
-exports.getActivePort = () => activePort;

@@ -10,7 +10,7 @@ exports.setupIpcHandlers = () => {
 
   ipcMain.handle("get-hacks", () => {
     const result = [];
-    for (key in availableHacks) {
+    for (const key in availableHacks) {
       const hack = availableHacks[key];
       result.push({
         id: hack.id,
