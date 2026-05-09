@@ -16,7 +16,7 @@ This is an Electron app that:
 ## Available Hacks
 
 - **HydroHopper 1K Coins** - Always get 1000 coins when the game ends
-- **Catchin' Waves 5K Coins** - Always get 5000 coins when the game ends <-- Does not work as of 11/12/25
+- **Catchin' Waves 5K Coins** - Always get 5000 coins when the game ends
 
 ## Requirements
 
@@ -41,5 +41,18 @@ npm start
 ```
 
 FFDec will automatically download on first run.
+
+## Pinning SWF integrity (optional)
+
+Each hack in `hacks.json` accepts an optional `sha256` field. When set, the
+downloader rejects the file unless its hex digest matches, mitigating MITM and
+upstream-CDN compromise. Compute a hash with:
+
+```bash
+shasum -a 256 path/to/CatchinWaves.swf
+```
+
+Leaving the field unset keeps the previous TLS-only behaviour. Pinned hashes
+need updating whenever the upstream SWF changes.
 
 

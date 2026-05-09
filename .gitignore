@@ -6,3 +6,4 @@ flasm/
 flasm-src/
 *.swf
 *-*-*-*-*-*/
+out/

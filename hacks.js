@@ -39,15 +39,32 @@ process.on("uncaughtException", (err) => {
   process.exit(1);
 });
 
+const readMeta = (metaPath) => {
+  try {
+    return JSON.parse(fs.readFileSync(metaPath, "utf8"));
+  } catch {
+    return null;
+  }
+};
+
+const logExcerpt = (scriptFilePath, content, replacement) => {
+  const anchor = replacement.anchor || replacement.find.slice(0, 40);
+  const idx = content.indexOf(anchor);
+  if (idx < 0) {
+    console.warn("  no anchor in", scriptFilePath, "(anchor:", JSON.stringify(anchor.slice(0, 60)), ")");
+    return;
+  }
+  const start = Math.max(0, idx - 100);
+  const end = Math.min(content.length, idx + anchor.length + 100);
+  console.warn("  found anchor in", scriptFilePath, "but find did not match. Context:");
+  console.warn("    " + JSON.stringify(content.slice(start, end)));
+};
+
 const deployHack = async (hack) => {
   console.log("Deploying " + hack.title + "...");
 
   const serverFilePath = path.join(__dirname, "server", new URL(hack.url).pathname);
-
-  if (fs.existsSync(serverFilePath)) {
-    console.log("SKIPPED (already deployed)");
-    return { success: true, skipped: true };
-  }
+  const metaPath = serverFilePath + ".meta.json";
 
   const tmpDir = path.join(__dirname, crypto.randomUUID());
   activeTempDirs.add(tmpDir);
@@ -65,10 +82,22 @@ const deployHack = async (hack) => {
 
     // Download the original SWF
     console.log("Downloading SWF...");
-    await downloadFile(hack.url, swfFilePath);
+    const { sha256: upstreamSha256 } = await downloadFile(hack.url, swfFilePath, {
+      expectedSha256: hack.sha256,
+    });
 
     if (!fs.existsSync(swfFilePath)) {
       throw new Error("Failed to download SWF file");
+    }
+
+    // Skip if deploy is up-to-date with current upstream
+    if (fs.existsSync(serverFilePath)) {
+      const meta = readMeta(metaPath);
+      if (meta && meta.upstreamSha256 === upstreamSha256) {
+        console.log("SKIPPED (already deployed for current upstream)");
+        return { success: true, skipped: true };
+      }
+      console.log("Upstream changed since last deploy, re-deploying...");
     }
 
     // Export scripts using FFDec
@@ -83,6 +112,7 @@ const deployHack = async (hack) => {
     const scriptPaths = hack.scriptPaths || [hack.scriptPath];
     let anyModified = false;
     const modifiedFiles = [];
+    const noMatchExcerpts = [];
 
     for (const scriptPath of scriptPaths) {
       const scriptFilePath = path.join(scriptsDir, scriptPath);
@@ -91,7 +121,9 @@ const deployHack = async (hack) => {
         continue;
       }
 
-      let scriptContent = fs.readFileSync(scriptFilePath, "utf8");
+      const rawContent = fs.readFileSync(scriptFilePath, "utf8");
+      const normalizedContent = rawContent.replace(/\r\n/g, "\n");
+      let scriptContent = normalizedContent;
       let modified = false;
 
       for (const replacement of hack.replacements) {
@@ -99,6 +131,8 @@ const deployHack = async (hack) => {
           scriptContent = scriptContent.replace(replacement.find, replacement.replace);
           modified = true;
           anyModified = true;
+        } else {
+          noMatchExcerpts.push({ scriptPath, content: scriptContent, replacement });
         }
       }
 
@@ -110,6 +144,10 @@ const deployHack = async (hack) => {
     }
 
     if (!anyModified) {
+      console.warn("No replacements applied. Diagnostic excerpts:");
+      for (const { scriptPath, content, replacement } of noMatchExcerpts) {
+        logExcerpt(scriptPath, content, replacement);
+      }
       throw new Error(
         "Could not apply any replacements. The game may have been updated. " +
         "Searched in: " + scriptPaths.join(", ")
@@ -125,19 +163,24 @@ const deployHack = async (hack) => {
       throw new Error("Failed to create modified SWF");
     }
 
-    // Copy the modified SWF to the server directory
+    // Copy the modified SWF to the server directory and write deploy metadata
     fs.copyFileSync(outputSwf, serverFilePath);
+    fs.writeFileSync(metaPath, JSON.stringify({
+      upstreamSha256,
+      deployedAt: new Date().toISOString(),
+      modifiedFiles,
+    }, null, 2));
 
     console.log("DONE - Modified", modifiedFiles.length, "file(s)");
-    return { success: true, modifiedFiles };
+    return { success: true, modifiedFiles, upstreamSha256 };
 
   } catch (err) {
     console.error("Failed to deploy hack:", hack.title, "-", err.message);
-    // Clean up server file if partially created
-    if (fs.existsSync(serverFilePath)) {
-      try {
-        fs.unlinkSync(serverFilePath);
-      } catch {}
+    // Clean up server file and meta if partially created
+    for (const p of [serverFilePath, metaPath]) {
+      if (fs.existsSync(p)) {
+        try { fs.unlinkSync(p); } catch {}
+      }
     }
     return { success: false, error: err.message };
 
@@ -154,14 +197,17 @@ const undeployHack = (hack) => {
   console.log("Undeploying " + hack.title + "...");
 
   const serverFilePath = path.join(__dirname, "server", new URL(hack.url).pathname);
+  const metaPath = serverFilePath + ".meta.json";
 
-  if (!fs.existsSync(serverFilePath)) {
+  if (!fs.existsSync(serverFilePath) && !fs.existsSync(metaPath)) {
     console.log("SKIPPED (not deployed)");
     return { success: true, skipped: true };
   }
 
   try {
-    fs.unlinkSync(serverFilePath);
+    for (const p of [serverFilePath, metaPath]) {
+      if (fs.existsSync(p)) fs.unlinkSync(p);
+    }
     console.log("DONE");
     return { success: true };
   } catch (err) {
@@ -170,28 +216,38 @@ const undeployHack = (hack) => {
   }
 };
 
+let syncInFlight = null;
+
 exports.syncHacksOnLocalServer = async () => {
-  // Verify Java is available before proceeding
-  const javaCheck = await verifyJava();
-  if (!javaCheck.available) {
-    console.error("Java is not available:", javaCheck.error);
-    console.error("Please install Java (OpenJDK) to use hacks.");
-    return { success: false, error: "Java not available: " + javaCheck.error };
-  }
-  console.log("Java found:", javaCheck.version);
+  if (syncInFlight) return syncInFlight;
 
-  await setupFFDec();
-
-  const results = {};
-  for (const key in availableHacks) {
-    if (!Object.prototype.hasOwnProperty.call(availableHacks, key)) continue;
-
-    const hack = availableHacks[key];
-    if (currentConfig[key]) {
-      results[key] = await deployHack(hack);
-    } else {
-      results[key] = undeployHack(hack);
+  syncInFlight = (async () => {
+    // Verify Java is available before proceeding
+    const javaCheck = await verifyJava();
+    if (!javaCheck.available) {
+      console.error("Java is not available:", javaCheck.error);
+      console.error("Please install Java (OpenJDK) to use hacks.");
+      return { success: false, error: "Java not available: " + javaCheck.error };
     }
+    console.log("Java found:", javaCheck.version);
+
+    await setupFFDec();
+
+    const results = {};
+    for (const key of Object.keys(availableHacks)) {
+      const hack = availableHacks[key];
+      if (currentConfig[key]) {
+        results[key] = await deployHack(hack);
+      } else {
+        results[key] = undeployHack(hack);
+      }
+    }
+    return results;
+  })();
+
+  try {
+    return await syncInFlight;
+  } finally {
+    syncInFlight = null;
   }
-  return results;
 };

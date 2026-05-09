@@ -1,8 +1,10 @@
 const path = require("path");
 const fs = require("fs");
-const { exec } = require("child_process");
+const { execFile } = require("child_process");
 const AdmZip = require("adm-zip");
 const { downloadFile } = require("./download");
+
+const EXEC_BUFFER = 10 * 1024 * 1024;
 
 const ffdecDir = path.join(__dirname, "ffdec");
 const ffdecUrl = "https://github.com/jindrapetrik/jpexs-decompiler/releases/download/version24.1.1/ffdec_24.1.1.zip";
@@ -30,7 +32,7 @@ const javaPath = findJava();
 // Verify Java is available and get version
 exports.verifyJava = () =>
   new Promise((resolve) => {
-    exec(`"${javaPath}" -version`, (error, stdout, stderr) => {
+    execFile(javaPath, ["-version"], (error, stdout, stderr) => {
       if (error) {
         resolve({
           available: false,
@@ -96,8 +98,8 @@ exports.exportScripts = (swfFile, outputDir) =>
     if (!fs.existsSync(jarPath)) {
       return reject(new Error("FFDec not installed. Run setupFFDec() first."));
     }
-    const cmd = `"${javaPath}" -jar "${jarPath}" -format script:as -export script "${outputDir}" "${swfFile}"`;
-    exec(cmd, { maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
+    const args = ["-jar", jarPath, "-format", "script:as", "-export", "script", outputDir, swfFile];
+    execFile(javaPath, args, { maxBuffer: EXEC_BUFFER }, (error, stdout, stderr) => {
       if (error) {
         console.error("FFDec export error:", error.message);
         if (stderr) console.error("stderr:", stderr);
@@ -113,8 +115,8 @@ exports.importScripts = (inputSwf, outputSwf, scriptsDir) =>
     if (!fs.existsSync(jarPath)) {
       return reject(new Error("FFDec not installed. Run setupFFDec() first."));
     }
-    const cmd = `"${javaPath}" -jar "${jarPath}" -importScript "${inputSwf}" "${outputSwf}" "${scriptsDir}"`;
-    exec(cmd, { maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
+    const args = ["-jar", jarPath, "-importScript", inputSwf, outputSwf, scriptsDir];
+    execFile(javaPath, args, { maxBuffer: EXEC_BUFFER }, (error, stdout, stderr) => {
       if (error) {
         console.error("FFDec import error:", error.message);
         if (stderr) console.error("stderr:", stderr);
