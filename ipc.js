@@ -1,24 +1,11 @@
 const { ipcMain } = require("electron");
 const { updateConfig, availableHacks, currentConfig } = require("./config");
 const { syncHacksOnLocalServer } = require("./hacks");
-
-const FORBIDDEN_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+const { sanitizeConfig } = require("./validate");
 
 const isFromMainFrame = (event) => {
   const sender = event.sender;
   return event.senderFrame === sender.mainFrame;
-};
-
-const sanitizeConfig = (arg) => {
-  if (typeof arg !== "object" || arg === null || Array.isArray(arg)) return null;
-  const clean = {};
-  for (const key of Object.keys(arg)) {
-    if (FORBIDDEN_KEYS.has(key)) continue;
-    if (!Object.prototype.hasOwnProperty.call(availableHacks, key)) continue;
-    if (typeof arg[key] !== "boolean") continue;
-    clean[key] = arg[key];
-  }
-  return clean;
 };
 
 exports.setupIpcHandlers = () => {
@@ -27,7 +14,7 @@ exports.setupIpcHandlers = () => {
       console.warn("Rejecting change-config from non-main frame");
       return;
     }
-    const clean = sanitizeConfig(arg);
+    const clean = sanitizeConfig(arg, availableHacks);
     if (!clean) {
       console.warn("Rejecting change-config: invalid payload");
       return;

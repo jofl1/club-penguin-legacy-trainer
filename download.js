@@ -78,16 +78,20 @@ exports.downloadFile = async (url, targetFile, options = {}) => {
         bytes += chunk.length;
       });
 
+      const unlinkSafe = () => {
+        try { fs.unlinkSync(targetFile); } catch {}
+      };
+
       try {
         await pipeline(response, fileStream);
       } catch (err) {
-        fs.unlink(targetFile, () => {});
+        unlinkSafe();
         reject(new Error(`Failed to write file: ${err.message}`));
         return;
       }
 
       if (bytes === 0) {
-        fs.unlink(targetFile, () => {});
+        unlinkSafe();
         reject(new Error("Download produced zero bytes"));
         return;
       }
@@ -95,7 +99,7 @@ exports.downloadFile = async (url, targetFile, options = {}) => {
       const sha256 = hash.digest("hex");
 
       if (expectedSha256 && sha256 !== expectedSha256.toLowerCase()) {
-        fs.unlink(targetFile, () => {});
+        unlinkSafe();
         reject(new Error(
           `SHA-256 mismatch for ${url}: expected ${expectedSha256}, got ${sha256}`
         ));

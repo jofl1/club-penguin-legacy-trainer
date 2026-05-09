@@ -1,0 +1,26 @@
+name: canary
+
+# Live upstream check: downloads the real SWFs, runs FFDec, and verifies
+# every replacement.find still matches. If this fails, the hack will fail
+# to deploy in production for end users.
+
+on:
+  schedule:
+    - cron: "0 14 * * *" # daily at 14:00 UTC
+  workflow_dispatch:
+
+jobs:
+  upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm run test:canary

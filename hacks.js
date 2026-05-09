@@ -5,6 +5,7 @@ const fs = require("fs");
 const { downloadFile } = require("./download");
 const { setupFFDec, exportScripts, importScripts, verifyJava } = require("./ffdec");
 const { availableHacks, currentConfig } = require("./config");
+const { applyReplacements, excerptAroundAnchor } = require("./matcher");
 
 // Track temp directories for cleanup on exit
 const activeTempDirs = new Set();
@@ -48,16 +49,13 @@ const readMeta = (metaPath) => {
 };
 
 const logExcerpt = (scriptFilePath, content, replacement) => {
-  const anchor = replacement.anchor || replacement.find.slice(0, 40);
-  const idx = content.indexOf(anchor);
-  if (idx < 0) {
-    console.warn("  no anchor in", scriptFilePath, "(anchor:", JSON.stringify(anchor.slice(0, 60)), ")");
+  const result = excerptAroundAnchor(content, replacement);
+  if (!result.found) {
+    console.warn("  no anchor in", scriptFilePath, "(anchor:", JSON.stringify(result.anchor.slice(0, 60)), ")");
     return;
   }
-  const start = Math.max(0, idx - 100);
-  const end = Math.min(content.length, idx + anchor.length + 100);
   console.warn("  found anchor in", scriptFilePath, "but find did not match. Context:");
-  console.warn("    " + JSON.stringify(content.slice(start, end)));
+  console.warn("    " + JSON.stringify(result.excerpt));
 };
 
 const deployHack = async (hack) => {
@@ -122,24 +120,16 @@ const deployHack = async (hack) => {
       }
 
       const rawContent = fs.readFileSync(scriptFilePath, "utf8");
-      const normalizedContent = rawContent.replace(/\r\n/g, "\n");
-      let scriptContent = normalizedContent;
-      let modified = false;
+      const result = applyReplacements(rawContent, hack.replacements);
 
-      for (const replacement of hack.replacements) {
-        if (scriptContent.includes(replacement.find)) {
-          scriptContent = scriptContent.replace(replacement.find, replacement.replace);
-          modified = true;
-          anyModified = true;
-        } else {
-          noMatchExcerpts.push({ scriptPath, content: scriptContent, replacement });
-        }
-      }
-
-      if (modified) {
-        fs.writeFileSync(scriptFilePath, scriptContent);
+      if (result.modified) {
+        fs.writeFileSync(scriptFilePath, result.content);
         modifiedFiles.push(scriptPath);
+        anyModified = true;
         console.log("Applied replacement in:", scriptPath);
+      }
+      for (const um of result.unmatched) {
+        noMatchExcerpts.push({ scriptPath, content: um.content, replacement: um.replacement });
       }
     }
 
