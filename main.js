@@ -1,4 +1,5 @@
-const { app, BrowserWindow } = require("electron");
+const path = require("path");
+const { app, BrowserWindow, session } = require("electron");
 const { syncHacksOnLocalServer } = require("./hacks");
 const { setupIpcHandlers } = require("./ipc");
 
@@ -12,15 +13,34 @@ const createWindow = () => {
     height: 820,
     autoHideMenuBar: true,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
+      preload: path.join(__dirname, "preload.js"),
     },
   });
 
   mainWindow.loadFile("public/index.html");
+
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  mainWindow.webContents.on("will-navigate", (event, url) => {
+    if (!url.startsWith("file://")) event.preventDefault();
+  });
+
+  if (app.isPackaged) {
+    mainWindow.webContents.on("devtools-opened", () => {
+      mainWindow.webContents.closeDevTools();
+    });
+  }
 };
 
+app.on("web-contents-created", (_, contents) => {
+  contents.setWindowOpenHandler(() => ({ action: "deny" }));
+});
+
 app.whenReady().then(async () => {
+  session.defaultSession.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
+
   await setupLocalServer();
   createWindow();
 

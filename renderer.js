@@ -1,5 +1,3 @@
-const ipcRenderer = require("electron").ipcRenderer;
-
 const goToTab = (tab) => {
   document.getElementById("tab-holder").className = "show-" + tab;
 };
@@ -14,7 +12,7 @@ document
 
 const getHacks = () => {
   const hacksContainer = document.getElementById("hacks");
-  ipcRenderer.invoke("get-hacks").then((hacks) => {
+  window.api.getHacks().then((hacks) => {
     for (let i = 0; i < hacks.length; i++) {
       const hack = hacks[i];
       const hackElement = document.createElement("div");
@@ -37,7 +35,7 @@ const getHacks = () => {
       hackElement.appendChild(checkboxElement);
       hackElement.appendChild(labelElement);
       hackElement.appendChild(descriptionElement);
-      
+
       hacksContainer.appendChild(hackElement);
     }
   });
@@ -50,7 +48,7 @@ const saveHacks = () => {
     const checkbox = checkboxes[i];
     config[checkbox.id.replace("chk-hack-", "")] = checkbox.checked;
   }
-  ipcRenderer.send("change-config", config);
+  window.api.changeConfig(config);
 }
 
 document.getElementById("btn-save-hacks").addEventListener("click", () => {

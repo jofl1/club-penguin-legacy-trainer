@@ -5,7 +5,7 @@
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self' https://play.cplegacy.com/ https://cpl-prod.b-cdn.net/; script-src 'self'; style-src 'self' 'unsafe-inline'"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-src https://play.cplegacy.com/ https://cpl-prod.b-cdn.net/; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'"
     />
     <link href="./styles.css" rel="stylesheet" />
     <title>Club Penguin Legacy Trainer</title>
@@ -26,7 +26,7 @@
         </div>
       </div>
       <div id="tab-play" class="tab">
-        <iframe src="https://play.cplegacy.com/"></iframe>
+        <iframe src="https://play.cplegacy.com/" sandbox="allow-scripts allow-same-origin"></iframe>
       </div>
     </div>
     <script src="../renderer.js"></script>

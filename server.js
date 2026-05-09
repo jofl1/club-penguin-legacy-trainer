@@ -54,6 +54,10 @@ const setupRequestListener = () => {
   }
 
   session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
+    if (!details.url.startsWith(CDN_URL + "/")) {
+      callback({});
+      return;
+    }
     const hack = hacksByUrl[details.url];
     if (!hack || !currentConfig[hack.id]) {
       callback({});
@@ -70,11 +74,26 @@ exports.setupLocalServer = async () => {
     const port = await findAvailablePort();
 
     const server = http.createServer((req, res) => {
-      const filePath = path.join(__dirname, "server", req.url);
+      if (req.method !== "GET" && req.method !== "HEAD") {
+        res.writeHead(405, { Allow: "GET, HEAD" });
+        res.end("Method Not Allowed");
+        return;
+      }
+
+      // Strip query/fragment before extension and path checks
+      const urlPath = req.url.split(/[?#]/)[0];
+
+      if (!urlPath.endsWith(".swf")) {
+        res.writeHead(404);
+        res.end("File not found");
+        return;
+      }
+
+      const filePath = path.join(__dirname, "server", urlPath);
 
       // Security: prevent directory traversal
       const resolvedPath = path.resolve(filePath);
-      const serverDir = path.resolve(path.join(__dirname, "server"));
+      const serverDir = path.resolve(path.join(__dirname, "server")) + path.sep;
       if (!resolvedPath.startsWith(serverDir)) {
         console.error("Blocked directory traversal attempt:", req.url);
         res.writeHead(403);
@@ -82,7 +101,7 @@ exports.setupLocalServer = async () => {
         return;
       }
 
-      fs.readFile(filePath, (err, file) => {
+      fs.readFile(resolvedPath, (err, file) => {
         if (err) {
           console.error("Failed to serve:", req.url, err.message);
           res.writeHead(404);
@@ -90,7 +109,12 @@ exports.setupLocalServer = async () => {
           return;
         }
         res.setHeader("Content-Type", "application/x-shockwave-flash");
-        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.setHeader("X-Content-Type-Options", "nosniff");
+        if (req.method === "HEAD") {
+          res.writeHead(200, { "Content-Length": file.length });
+          res.end();
+          return;
+        }
         res.writeHead(200);
         res.end(file);
       });
